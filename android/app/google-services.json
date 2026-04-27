@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "167490502893",
+    "project_id": "todogame-63ec9",
+    "storage_bucket": "todogame-63ec9.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:167490502893:android:65990380f79831d2e2cce4",
+        "android_client_info": {
+          "package_name": "com.kidquest.todo_game"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "167490502893-1ucg1f5d7bvr7789dkkam6hmqmsl8r6e.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA1ts3kQKKZlCOw1emymeUekm2araPL9Os"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "167490502893-1ucg1f5d7bvr7789dkkam6hmqmsl8r6e.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "167490502893-73vnbdkk8ncjh5n085665g3da4g700t0.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.kidquest.todoGame"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
