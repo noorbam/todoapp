@@ -7,6 +7,7 @@ import '../screens/parent/parent_dashboard_screen.dart';
 import '../screens/parent/add_task_screen.dart';
 import '../screens/parent/task_approval_screen.dart';
 import '../screens/parent/child_progress_screen.dart';
+import '../screens/parent/settings_screen.dart';
 import '../screens/child/child_home_screen.dart';
 import '../screens/child/missions_screen.dart';
 import '../screens/child/rewards_screen.dart';
@@ -23,6 +24,7 @@ class AppRouter {
   static const String addTask = '/add-task';
   static const String taskApproval = '/task-approval';
   static const String childProgress = '/child-progress';
+  static const String parentSettings = '/parent-settings';
   static const String childHome = '/child-home';
   static const String missions = '/missions';
   static const String rewards = '/rewards';
@@ -35,6 +37,7 @@ class AppRouter {
         roleSelection: (_) => const RoleSelectionScreen(),
         childLogin: (_) => const ChildLoginScreen(),
         parentDashboard: (_) => const ParentDashboardScreen(),
+        parentSettings: (_) => const ParentSettingsScreen(),
         addTask: (_) => const AddTaskScreen(),
         taskApproval: (_) => const TaskApprovalScreen(),
         childProgress: (_) => const ChildProgressScreen(),

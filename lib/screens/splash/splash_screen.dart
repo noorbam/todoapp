@@ -3,9 +3,11 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_strings.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/language_provider.dart';
 
-/// Splash screen — animates the KidQuest logo and routes based on auth state
+/// Splash screen — animates the Hero Mission logo and routes based on auth state
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -41,11 +43,14 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final langProvider = context.watch<LanguageProvider>();
+    final font = langProvider.isArabic ? GoogleFonts.cairo() : GoogleFonts.cairo();
+
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFFE0F7FA), Color(0xFFE8EAF6)],
+            colors: AppColors.primaryGradient,
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -54,38 +59,57 @@ class _SplashScreenState extends State<SplashScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Animated logo
+              // Animated icon/logo (Scale + Fade + Rotate)
               Container(
-                width: 140,
-                height: 140,
+                width: 150,
+                height: 150,
                 decoration: BoxDecoration(
                   color: AppColors.white,
                   borderRadius: BorderRadius.circular(40),
-                  boxShadow: AppColors.softShadow,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.2),
+                      blurRadius: 30,
+                      offset: const Offset(0, 15),
+                    )
+                  ],
                 ),
                 child: const Center(
-                  child: Text('⚔️', style: TextStyle(fontSize: 72)),
+                  child: Text('🛡️', style: TextStyle(fontSize: 80)),
                 ),
               )
                   .animate()
+                  .fadeIn(duration: 400.ms)
                   .scale(
                     begin: const Offset(0.3, 0.3),
                     end: const Offset(1.0, 1.0),
                     duration: 800.ms,
                     curve: Curves.elasticOut,
                   )
-                  .fadeIn(duration: 400.ms),
+                  .rotate(
+                    begin: -0.1,
+                    end: 0,
+                    duration: 600.ms,
+                    curve: Curves.easeOutBack,
+                  ),
 
-              const SizedBox(height: 32),
+              const SizedBox(height: 40),
 
               // App name
               Text(
-                'KidQuest',
-                style: GoogleFonts.nunito(
+                AppStrings.get(context, 'appName'),
+                style: font.copyWith(
                   fontSize: 48,
                   fontWeight: FontWeight.w900,
-                  color: AppColors.textMain,
-                  letterSpacing: -1,
+                  color: AppColors.white,
+                  letterSpacing: langProvider.isArabic ? 0 : -1,
+                  shadows: [
+                    Shadow(
+                      color: Colors.black.withValues(alpha: 0.2),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    )
+                  ],
                 ),
               )
                   .animate()
@@ -94,25 +118,27 @@ class _SplashScreenState extends State<SplashScreen> {
 
               const SizedBox(height: 12),
 
+              // Subtitle
               Text(
-                'Complete Missions. Earn Rewards! 🏆',
-                style: GoogleFonts.nunito(
-                  fontSize: 18,
-                  color: AppColors.textSub,
+                AppStrings.get(context, 'tagline'),
+                style: font.copyWith(
+                  fontSize: 20,
+                  color: Colors.white.withValues(alpha: 0.9),
                   fontWeight: FontWeight.w700,
                 ),
               )
                   .animate()
-                  .fadeIn(delay: 600.ms, duration: 600.ms),
+                  .fadeIn(delay: 600.ms, duration: 600.ms)
+                  .slideY(begin: 0.2, end: 0, delay: 600.ms, duration: 600.ms),
 
               const SizedBox(height: 80),
 
               // Loading indicator
               const SizedBox(
-                width: 36,
-                height: 36,
+                width: 40,
+                height: 40,
                 child: CircularProgressIndicator(
-                  color: AppColors.primaryStrong,
+                  color: AppColors.white,
                   strokeWidth: 4,
                 ),
               )

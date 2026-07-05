@@ -1,97 +1,95 @@
+import 'progress_model.dart';
+
+class BadgeProgress {
+  final int current;
+  final int target;
+  final double fraction;
+
+  BadgeProgress({required int current, required this.target})
+      : current = current.clamp(0, target),
+        fraction = target == 0 ? 0.0 : (current.clamp(0, target) / target);
+}
+
 /// Badge model — achievements for the gamification system
 class BadgeModel {
   final String id;
-  final String title;
-  final String description;
+  final String titleKey;
+  final String descKey;
   final String emoji;
-  final String condition; // human-readable unlock condition
+  final int requiredXp; // unified XP requirement
 
   const BadgeModel({
     required this.id,
-    required this.title,
-    required this.description,
+    required this.titleKey,
+    required this.descKey,
     required this.emoji,
-    required this.condition,
+    required this.requiredXp,
   });
 
-  /// All available badges in the game
+  /// The unified XP badge progression
   static const List<BadgeModel> allBadges = [
     BadgeModel(
-      id: 'first_mission',
-      title: 'First Mission!',
-      description: 'Completed your very first mission.',
-      emoji: '🚀',
-      condition: 'Complete 1 approved task',
+      id: 'novice',
+      titleKey: 'badge_novice_title',
+      descKey: 'badge_novice_desc',
+      emoji: '🌟',
+      requiredXp: 50,
     ),
     BadgeModel(
-      id: 'streak_5',
-      title: '5-Day Warrior',
-      description: 'Maintained a 5-day streak!',
-      emoji: '🔥',
-      condition: 'Reach 5-day streak',
+      id: 'apprentice',
+      titleKey: 'badge_apprentice_title',
+      descKey: 'badge_apprentice_desc',
+      emoji: '🛡️',
+      requiredXp: 300,
     ),
     BadgeModel(
-      id: 'streak_10',
-      title: '10-Day Legend',
-      description: 'An unstoppable force! 10 days in a row!',
-      emoji: '⚡',
-      condition: 'Reach 10-day streak',
+      id: 'knight',
+      titleKey: 'badge_knight_title',
+      descKey: 'badge_knight_desc',
+      emoji: '⚔️',
+      requiredXp: 750,
     ),
     BadgeModel(
-      id: 'level_5',
-      title: 'Level 5 Hero',
-      description: 'Reached Level 5 — you are a true hero!',
-      emoji: '🏆',
-      condition: 'Reach Level 5',
-    ),
-    BadgeModel(
-      id: 'level_10',
-      title: 'Grand Master',
-      description: 'Maximum level achieved. Legendary!',
+      id: 'master',
+      titleKey: 'badge_master_title',
+      descKey: 'badge_master_desc',
       emoji: '👑',
-      condition: 'Reach Level 10',
+      requiredXp: 1400,
     ),
     BadgeModel(
-      id: 'coins_100',
-      title: 'Century Collector',
-      description: 'Earned 100 coins total!',
-      emoji: '💰',
-      condition: 'Earn 100 total XP',
-    ),
-    BadgeModel(
-      id: 'missions_10',
-      title: 'Mission Master',
-      description: 'Completed 10 missions!',
-      emoji: '🎖️',
-      condition: 'Complete 10 approved tasks',
+      id: 'legend',
+      titleKey: 'badge_legend_title',
+      descKey: 'badge_legend_desc',
+      emoji: '🐉',
+      requiredXp: 2250,
     ),
   ];
 
   /// Check which new badges should be awarded given current stats
   static List<String> checkNewBadges({
     required int xp,
-    required int level,
-    required int streak,
-    required int approvedTaskCount,
     required List<String> existingBadges,
   }) {
     final List<String> newBadges = [];
 
-    void check(String id, bool condition) {
-      if (condition && !existingBadges.contains(id)) {
-        newBadges.add(id);
+    for (var badge in allBadges) {
+      if (!existingBadges.contains(badge.id)) {
+        if (xp >= badge.requiredXp) {
+          newBadges.add(badge.id);
+        }
       }
     }
 
-    check('first_mission', approvedTaskCount >= 1);
-    check('streak_5', streak >= 5);
-    check('streak_10', streak >= 10);
-    check('level_5', level >= 5);
-    check('level_10', level >= 10);
-    check('coins_100', xp >= 100);
-    check('missions_10', approvedTaskCount >= 10);
-
     return newBadges;
+  }
+
+  /// Get the current progress towards earning this badge
+  BadgeProgress getProgress(ProgressModel progress) {
+    int current = progress.xp;
+    int target = requiredXp;
+
+    if (current > target) current = target;
+    return BadgeProgress(current: current, target: target);
   }
 
   /// Get badge by id

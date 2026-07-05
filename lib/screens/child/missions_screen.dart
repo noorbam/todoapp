@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:confetti/confetti.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_strings.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/task_provider.dart';
 import '../../models/task_model.dart';
 import '../../widgets/mission_card.dart';
 
-
-/// Missions screen — full list of all missions with filter tabs
 class MissionsScreen extends StatefulWidget {
-  const MissionsScreen({super.key});
+  final bool isTab;
+  final ConfettiController? confettiController;
+  const MissionsScreen({super.key, this.isTab = false, this.confettiController});
 
   @override
   State<MissionsScreen> createState() => _MissionsScreenState();
@@ -47,26 +49,26 @@ class _MissionsScreenState extends State<MissionsScreen>
     final completedTasks = taskProvider.completedTasks;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
-            // Header
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
               child: Row(
                 children: [
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.arrow_back_ios, color: AppColors.primaryStrong),
-                  ),
+                  if (!widget.isTab)
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.arrow_back_ios, color: AppColors.primaryStrong),
+                    ),
                   Expanded(
                     child: Text(
-                      '⚔️ My Missions',
-                      style: GoogleFonts.nunito(
+                      AppStrings.get(context, 'myMissions'),
+                      style: GoogleFonts.cairo(
                         fontSize: 26,
                         fontWeight: FontWeight.w900,
-                        color: AppColors.textMain,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                   ),
@@ -74,18 +76,16 @@ class _MissionsScreenState extends State<MissionsScreen>
               ),
             ),
 
-            // Tab bar
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.05),
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: TabBar(
                 controller: _tabController,
                 indicator: BoxDecoration(
-                  gradient:
-                      const LinearGradient(colors: AppColors.primaryGradient),
+                  gradient: const LinearGradient(colors: AppColors.primaryGradient),
                   borderRadius: BorderRadius.circular(18),
                   boxShadow: [
                     BoxShadow(
@@ -97,28 +97,26 @@ class _MissionsScreenState extends State<MissionsScreen>
                 ),
                 indicatorSize: TabBarIndicatorSize.tab,
                 labelColor: Colors.white,
-                unselectedLabelColor: AppColors.textSub,
-                labelStyle:
-                    GoogleFonts.nunito(fontSize: 14, fontWeight: FontWeight.w900),
+                unselectedLabelColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                labelStyle: GoogleFonts.cairo(fontSize: 14, fontWeight: FontWeight.w900),
                 dividerColor: Colors.transparent,
                 tabs: [
-                  Tab(text: 'All (${allTasks.length})'),
-                  Tab(text: 'Active (${activeTasks.length})'),
-                  Tab(text: 'Done (${completedTasks.length})'),
+                  Tab(text: '${AppStrings.get(context, 'all')} (${allTasks.length})'),
+                  Tab(text: '${AppStrings.get(context, 'active')} (${activeTasks.length})'),
+                  Tab(text: '${AppStrings.get(context, 'done')} (${completedTasks.length})'),
                 ],
               ),
             ),
 
-            // Tab content
             Expanded(
               child: taskProvider.isLoading
                   ? const Center(child: CircularProgressIndicator(color: AppColors.primaryStrong))
                   : TabBarView(
                       controller: _tabController,
                       children: [
-                        _TaskList(tasks: allTasks),
-                        _TaskList(tasks: activeTasks),
-                        _TaskList(tasks: completedTasks),
+                        _TaskList(tasks: allTasks, confettiController: widget.confettiController),
+                        _TaskList(tasks: activeTasks, confettiController: widget.confettiController),
+                        _TaskList(tasks: completedTasks, confettiController: widget.confettiController),
                       ],
                     ),
             ),
@@ -131,7 +129,8 @@ class _MissionsScreenState extends State<MissionsScreen>
 
 class _TaskList extends StatelessWidget {
   final List<TaskModel> tasks;
-  const _TaskList({required this.tasks});
+  final ConfettiController? confettiController;
+  const _TaskList({required this.tasks, this.confettiController});
 
   @override
   Widget build(BuildContext context) {
@@ -145,20 +144,20 @@ class _TaskList extends StatelessWidget {
                 .scale(begin: const Offset(0, 0), duration: 500.ms, curve: Curves.elasticOut),
             const SizedBox(height: 24),
             Text(
-              'Nothing here yet!',
-              style: GoogleFonts.nunito(
+              AppStrings.get(context, 'nothingHere'),
+              style: GoogleFonts.cairo(
                 fontSize: 22,
                 fontWeight: FontWeight.w900,
-                color: AppColors.textMain,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 12),
             Text(
-              'Missions will appear here\nonce assigned.',
+              AppStrings.get(context, 'missionsWillAppear'),
               textAlign: TextAlign.center,
-              style: GoogleFonts.nunito(
+              style: GoogleFonts.cairo(
                 fontSize: 16,
-                color: AppColors.textSub,
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -177,11 +176,10 @@ class _TaskList extends StatelessWidget {
           colorIndex: index,
           onComplete: task.isPending || task.isRejected
               ? () async {
-                  final success = await context.read<TaskProvider>().completeTask(task.id);
-                  if (!context.mounted) return;
-                  if (success) {
-                    Navigator.pushNamed(context, '/celebration', arguments: task.points);
-                  }
+                  // Navigate immediately for instant feedback
+                  Navigator.pushNamed(context, '/celebration', arguments: task.points);
+                  // Update Firestore in background
+                  context.read<TaskProvider>().completeTask(task.id);
                 }
               : null,
         ).animate(delay: (index * 80).ms).fadeIn(duration: 300.ms).slideY(begin: 0.1, end: 0);

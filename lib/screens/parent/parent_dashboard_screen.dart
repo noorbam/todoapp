@@ -3,13 +3,15 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_strings.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/child_provider.dart';
 import '../../providers/progress_provider.dart';
+import '../../providers/task_provider.dart';
 import '../../models/user_model.dart';
 import '../../widgets/child_summary_card.dart';
+import '../../services/firestore_service.dart';
 
-/// Parent Dashboard — shows children list with progress overview
 class ParentDashboardScreen extends StatefulWidget {
   const ParentDashboardScreen({super.key});
 
@@ -18,8 +20,6 @@ class ParentDashboardScreen extends StatefulWidget {
 }
 
 class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
-  int _selectedTab = 0;
-
   @override
   void initState() {
     super.initState();
@@ -27,6 +27,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
       final parent = context.read<AuthProvider>().currentUser;
       if (parent != null) {
         context.read<ChildProvider>().listenToChildren(parent.id);
+        context.read<TaskProvider>().listenToPendingApprovals(parent.id);
       }
     });
   }
@@ -38,45 +39,44 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
     final parent = authProvider.currentUser;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppColors.white,
+        backgroundColor: Theme.of(context).cardColor,
         centerTitle: false,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'KidQuest',
-              style: GoogleFonts.nunito(
+              AppStrings.get(context, 'appName'),
+              style: GoogleFonts.cairo(
                 fontSize: 14,
                 color: AppColors.primaryStrong,
                 fontWeight: FontWeight.w800,
               ),
             ),
             Text(
-              'My Heroes 🏆',
-              style: GoogleFonts.nunito(
+              AppStrings.get(context, 'myHeroes'),
+              style: GoogleFonts.cairo(
                 fontSize: 22,
                 fontWeight: FontWeight.w900,
-                color: AppColors.textMain,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.task_alt, color: AppColors.primaryStrong),
-            tooltip: 'Approvals',
-            onPressed: () =>
-                Navigator.pushNamed(context, '/task-approval'),
+            icon: Icon(Icons.settings, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
+            tooltip: AppStrings.get(context, 'settings'),
+            onPressed: () => Navigator.pushNamed(context, '/parent-settings'),
           ),
           IconButton(
-            icon: const Icon(Icons.logout, color: AppColors.textSub),
-            tooltip: 'Sign Out',
+            icon: Icon(Icons.logout, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
+            tooltip: AppStrings.get(context, 'signOut'),
             onPressed: () async {
               await context.read<AuthProvider>().signOut();
               if (!mounted) return;
-              Navigator.pushReplacementNamed(context, '/login');
+              Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
             },
           ),
         ],
@@ -84,8 +84,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
         shadowColor: Colors.black12,
       ),
       body: childProvider.isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primaryStrong))
+          ? const Center(child: CircularProgressIndicator(color: AppColors.primaryStrong))
           : childProvider.children.isEmpty
               ? _buildEmptyState(context)
               : _buildChildrenList(context, childProvider.children),
@@ -95,9 +94,8 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
         elevation: 4,
         icon: const Icon(Icons.person_add, color: Colors.white),
         label: Text(
-          'Add Hero',
-          style: GoogleFonts.nunito(
-              color: Colors.white, fontWeight: FontWeight.w900),
+          AppStrings.get(context, 'addHero'),
+          style: GoogleFonts.cairo(color: Colors.white, fontWeight: FontWeight.w900),
         ),
       ),
     );
@@ -109,17 +107,23 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
       itemCount: children.length,
       itemBuilder: (context, index) {
         final child = children[index];
-        return FutureBuilder(
-          future: context.read<ProgressProvider>().fetchProgress(child.id),
+        final taskProvider = context.watch<TaskProvider>();
+        final pendingCount = taskProvider.pendingApprovals
+            .where((t) => t.childId == child.id)
+            .length;
+
+        return StreamBuilder(
+          stream: FirestoreService().getProgressStream(child.id),
           builder: (context, snapshot) {
             return ChildSummaryCard(
               child: child,
               progress: snapshot.data,
+              pendingApprovalsCount: pendingCount,
               onTap: () {
                 context.read<ChildProvider>().selectChild(child);
-                Navigator.pushNamed(context, '/child-progress',
-                    arguments: child);
+                Navigator.pushNamed(context, '/child-progress', arguments: child);
               },
+              onDelete: () => _confirmDeleteChild(context, child),
             ).animate(delay: (index * 80).ms).fadeIn(duration: 300.ms).slideX(
                   begin: -0.1,
                   end: 0,
@@ -128,6 +132,42 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
           },
         );
       },
+    );
+  }
+
+  void _confirmDeleteChild(BuildContext context, UserModel child) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Theme.of(context).cardColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        title: Text(AppStrings.get(context, 'deleteHero'), style: GoogleFonts.cairo(fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onSurface)),
+        content: Text('${child.name}? ${AppStrings.get(context, 'deleteHeroConfirm')}', style: GoogleFonts.cairo(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7))),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(AppStrings.get(context, 'cancel'), style: GoogleFonts.cairo(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6), fontWeight: FontWeight.w700)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final success = await context.read<ChildProvider>().deleteChild(child.id);
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(success
+                        ? AppStrings.get(context, 'deleteSuccess')
+                        : AppStrings.get(context, 'deleteError')),
+                    backgroundColor: success ? AppColors.success : AppColors.error,
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error, foregroundColor: Colors.white),
+            child: Text(AppStrings.get(context, 'delete'), style: GoogleFonts.cairo(fontWeight: FontWeight.w900)),
+          ),
+        ],
+      ),
     );
   }
 
@@ -141,22 +181,14 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
               .scale(begin: const Offset(0, 0), duration: 500.ms, curve: Curves.elasticOut),
           const SizedBox(height: 24),
           Text(
-            'No Heroes Yet!',
-            style: GoogleFonts.nunito(
-              fontSize: 24,
-              fontWeight: FontWeight.w900,
-              color: AppColors.textMain,
-            ),
+            AppStrings.get(context, 'noHeroesYet'),
+            style: GoogleFonts.cairo(fontSize: 24, fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onSurface),
           ),
           const SizedBox(height: 12),
           Text(
-            'Tap "Add Hero" to create your\nfirst child account.',
+            AppStrings.get(context, 'noHeroesHint'),
             textAlign: TextAlign.center,
-            style: GoogleFonts.nunito(
-              fontSize: 16,
-              color: AppColors.textSub,
-              fontWeight: FontWeight.w600,
-            ),
+            style: GoogleFonts.cairo(fontSize: 16, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6), fontWeight: FontWeight.w600),
           ),
         ],
       ),
@@ -173,12 +205,11 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) {
           return AlertDialog(
-            backgroundColor: AppColors.white,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+            backgroundColor: Theme.of(context).cardColor,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
             title: Text(
-              'Add New Hero 🦸',
-              style: GoogleFonts.nunito(fontWeight: FontWeight.w900, fontSize: 22),
+              AppStrings.get(context, 'addNewHero'),
+              style: GoogleFonts.cairo(fontWeight: FontWeight.w900, fontSize: 22, color: Theme.of(context).colorScheme.onSurface),
             ),
             content: SingleChildScrollView(
               child: Column(
@@ -187,9 +218,11 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                 children: [
                   TextField(
                     controller: nameController,
-                    decoration: const InputDecoration(
-                      labelText: "Hero's Name",
-                      prefixIcon: Icon(Icons.person, color: AppColors.primaryStrong),
+                    style: GoogleFonts.cairo(color: Theme.of(context).colorScheme.onSurface),
+                    decoration: InputDecoration(
+                      labelText: AppStrings.get(context, 'heroName'),
+                      labelStyle: GoogleFonts.cairo(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
+                      prefixIcon: const Icon(Icons.person, color: AppColors.primaryStrong),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -198,16 +231,17 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                     keyboardType: TextInputType.number,
                     maxLength: 4,
                     obscureText: true,
-                    decoration: const InputDecoration(
-                      labelText: '4-digit PIN',
-                      prefixIcon: Icon(Icons.lock, color: AppColors.primaryStrong),
+                    style: GoogleFonts.cairo(color: Theme.of(context).colorScheme.onSurface),
+                    decoration: InputDecoration(
+                      labelText: AppStrings.get(context, 'pin4'),
+                      labelStyle: GoogleFonts.cairo(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
+                      prefixIcon: const Icon(Icons.lock, color: AppColors.primaryStrong),
                     ),
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Choose Avatar:',
-                    style: GoogleFonts.nunito(
-                        fontSize: 15, fontWeight: FontWeight.w800, color: AppColors.textMain),
+                    AppStrings.get(context, 'chooseAvatar'),
+                    style: GoogleFonts.cairo(fontSize: 15, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.onSurface),
                   ),
                   const SizedBox(height: 12),
                   Wrap(
@@ -222,9 +256,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: selectedAvatar == i
-                                  ? AppColors.primaryStrong
-                                  : Colors.transparent,
+                              color: selectedAvatar == i ? AppColors.primaryStrong : Colors.transparent,
                               width: 3,
                             ),
                           ),
@@ -239,26 +271,22 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: Text('Cancel', style: GoogleFonts.nunito(color: AppColors.textSub, fontWeight: FontWeight.w700)),
+                child: Text(AppStrings.get(context, 'cancel'), style: GoogleFonts.cairo(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6), fontWeight: FontWeight.w700)),
               ),
               ElevatedButton(
                 onPressed: () async {
-                  if (nameController.text.trim().isEmpty ||
-                      pinController.text.trim().length != 4) {
+                  if (nameController.text.trim().isEmpty || pinController.text.trim().length != 4) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content:
-                              Text('Please fill name and 4-digit PIN!')),
+                      SnackBar(content: Text(AppStrings.get(context, 'pleaseFillFields'))),
                     );
                     return;
                   }
 
-                  final child =
-                      await context.read<AuthProvider>().createChildAccount(
-                            name: nameController.text.trim(),
-                            pin: pinController.text.trim(),
-                            avatarIndex: selectedAvatar,
-                          );
+                  final child = await context.read<AuthProvider>().createChildAccount(
+                        name: nameController.text.trim(),
+                        pin: pinController.text.trim(),
+                        avatarIndex: selectedAvatar,
+                      );
 
                   if (!ctx.mounted) return;
                   Navigator.pop(ctx);
@@ -266,13 +294,13 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                   if (child != null) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('${child.name} is ready to quest! 🎉'),
+                        content: Text('${child.name} ${AppStrings.get(context, 'heroReady')}'),
                         backgroundColor: AppColors.success,
                       ),
                     );
                   }
                 },
-                child: const Text('Create Hero!'),
+                child: Text(AppStrings.get(context, 'createHero'), style: GoogleFonts.cairo(fontWeight: FontWeight.w900)),
               ),
             ],
           );
@@ -298,9 +326,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
             ? [BoxShadow(color: colors[index].withValues(alpha: 0.5), blurRadius: 8)]
             : [],
       ),
-      child: Center(
-        child: Text(emojis[index], style: const TextStyle(fontSize: 22)),
-      ),
+      child: Center(child: Text(emojis[index], style: const TextStyle(fontSize: 22))),
     );
   }
 }

@@ -53,7 +53,49 @@ class RewardProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+  Future<bool> createReward({
+    required String title,
+    String? description,
+    required int cost,
+    String iconName = '🎁',
+    required String childId,
+    required String parentId,
+  }) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      await _firestoreService.createReward(
+        title: title,
+        description: description,
+        cost: cost,
+        iconName: iconName,
+        childId: childId,
+        parentId: parentId,
+      );
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 
+  Future<bool> deleteReward(String rewardId) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      await _firestoreService.deleteReward(rewardId);
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
   void clearError() {
     _error = null;
     notifyListeners();

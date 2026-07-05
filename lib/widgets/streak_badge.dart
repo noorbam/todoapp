@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../core/constants/app_strings.dart';
 
-
-/// Streak badge — fire icon + day count
 class StreakBadge extends StatelessWidget {
   final int streak;
   final double size;
@@ -45,8 +44,8 @@ class StreakBadge extends StatelessWidget {
           ),
           SizedBox(width: 6 * size),
           Text(
-            '$streak Day${streak == 1 ? '' : 's'}',
-            style: GoogleFonts.nunito(
+            '$streak ${AppStrings.get(context, streak == 1 ? 'streakDay' : 'streakDays')}',
+            style: GoogleFonts.cairo(
               fontSize: 14 * size,
               fontWeight: FontWeight.w900,
               color: isActive ? Colors.white : Colors.black38,

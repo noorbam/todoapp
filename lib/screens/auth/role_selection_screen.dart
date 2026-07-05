@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/constants/app_strings.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -27,7 +28,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
     final name = _nameController.text.trim();
     if (name.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter your name!')),
+        SnackBar(content: Text(AppStrings.get(context, 'pleaseEnterName'))),
       );
       return;
     }
@@ -50,10 +51,13 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFFE0F7FA), Color(0xFFE8EAF6)],
+            colors: Theme.of(context).brightness == Brightness.light
+              ? [const Color(0xFFE0F7FA), const Color(0xFFE8EAF6)]
+              : [AppColors.darkBackground, AppColors.darkSurface],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -68,10 +72,10 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
 
                   Text(
                     'Welcome, Parent! 👋',
-                    style: GoogleFonts.nunito(
+                    style: GoogleFonts.cairo(
                       fontSize: 32,
                       fontWeight: FontWeight.w900,
-                      color: AppColors.textMain,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ).animate().fadeIn(duration: 400.ms),
 
@@ -79,9 +83,9 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
 
                   Text(
                     "Let's set up your account",
-                    style: GoogleFonts.nunito(
+                    style: GoogleFonts.cairo(
                       fontSize: 18,
-                      color: AppColors.textSub,
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                       fontWeight: FontWeight.w600,
                     ),
                   ).animate().fadeIn(delay: 150.ms, duration: 400.ms),
@@ -110,7 +114,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                         const SizedBox(height: 16),
                         Text(
                           'Parent Account',
-                          style: GoogleFonts.nunito(
+                          style: GoogleFonts.cairo(
                             fontSize: 24,
                             fontWeight: FontWeight.w900,
                             color: Colors.white,
@@ -120,7 +124,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                         Text(
                           'Create missions • Approve tasks • Track progress',
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.nunito(
+                          style: GoogleFonts.cairo(
                             fontSize: 14,
                             color: Colors.white.withValues(alpha: 0.8),
                             fontWeight: FontWeight.w600,
@@ -140,7 +144,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                   // Name input
                   TextField(
                     controller: _nameController,
-                    style: GoogleFonts.nunito(color: AppColors.textMain, fontSize: 18, fontWeight: FontWeight.w600),
+                    style: GoogleFonts.cairo(color: Theme.of(context).colorScheme.onSurface, fontSize: 18, fontWeight: FontWeight.w600),
                     decoration: const InputDecoration(
                       labelText: 'Your Name',
                       prefixIcon: Icon(Icons.person, color: AppColors.primaryStrong),
@@ -171,7 +175,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                             ),
                             child: Text(
                               "Let's Go! 🚀",
-                              style: GoogleFonts.nunito(
+                              style: GoogleFonts.cairo(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w900,
                               ),

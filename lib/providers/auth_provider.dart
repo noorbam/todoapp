@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
+import '../services/firestore_service.dart';
 
 /// AuthProvider — manages authentication state for the whole app
 class AuthProvider extends ChangeNotifier {
@@ -37,6 +38,24 @@ class AuthProvider extends ChangeNotifier {
       }
     } catch (e) {
       _error = e.toString();
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // ── Reset Data ─────────────────────────────────────────────────────────────
+
+  Future<bool> resetAllData() async {
+    if (_currentUser == null) return false;
+    _setLoading(true);
+    try {
+      final firestoreService = FirestoreService();
+      await firestoreService.resetParentData(_currentUser!.id);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      return false;
     } finally {
       _setLoading(false);
     }

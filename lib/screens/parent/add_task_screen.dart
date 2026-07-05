@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
+import '../../core/constants/app_strings.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../core/constants/app_colors.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/language_provider.dart';
 import '../../providers/task_provider.dart';
 import '../../providers/child_provider.dart';
 import '../../models/user_model.dart';
 
 /// Add Task screen — parent creates a new mission for a child
 class AddTaskScreen extends StatefulWidget {
-  const AddTaskScreen({super.key});
+  final UserModel? child;
+  const AddTaskScreen({super.key, this.child});
 
   @override
   State<AddTaskScreen> createState() => _AddTaskScreenState();
@@ -20,10 +23,32 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
-  int _points = 10;
+  int _points = 25;
+  String _difficulty = 'easy';
   DateTime? _deadline;
   UserModel? _selectedChild;
   bool _isLoading = false;
+
+  int get _minCoins => _difficulty == 'easy' ? 5 : _difficulty == 'medium' ? 51 : 101;
+  int get _maxCoins => _difficulty == 'easy' ? 50 : _difficulty == 'medium' ? 100 : 200;
+  int get _fixedXp => _difficulty == 'easy' ? 50 : _difficulty == 'medium' ? 100 : 200;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedChild = widget.child;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_selectedChild == null) {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args is UserModel) {
+        _selectedChild = args;
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -46,7 +71,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedChild == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please assign this mission to a hero!')),
+        SnackBar(content: Text(AppStrings.get(context, 'pleaseAssignMission'))),
       );
       return;
     }
@@ -57,6 +82,8 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
           title: _titleController.text.trim(),
           description: _descriptionController.text.trim(),
           points: _points,
+          difficulty: _difficulty,
+          xp: _fixedXp,
           childId: _selectedChild!.id,
           parentId: parent.id,
           deadline: _deadline,
@@ -68,8 +95,8 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     if (success) {
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Mission created! ⚔️'),
+        SnackBar(
+          content: Text(AppStrings.get(context, 'missionCreated')),
           backgroundColor: AppColors.success,
         ),
       );
@@ -83,18 +110,19 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final childProvider = context.watch<ChildProvider>();
+    final langProvider = context.watch<LanguageProvider>();
+    final font = langProvider.isArabic ? GoogleFonts.cairo() : GoogleFonts.cairo();
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppColors.white,
+        backgroundColor: Theme.of(context).cardColor,
         elevation: 0,
         title: Text(
-          'New Mission ⚔️',
-          style: GoogleFonts.nunito(
+          AppStrings.get(context, 'newMission'),
+          style: font.copyWith(
             fontWeight: FontWeight.w900,
-            color: AppColors.textMain,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         leading: IconButton(
@@ -109,39 +137,39 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _sectionLabel('Mission Title'),
+              _sectionLabel(AppStrings.get(context, 'missionTitle'), font),
               const SizedBox(height: 10),
               TextFormField(
                 controller: _titleController,
-                style: GoogleFonts.nunito(fontWeight: FontWeight.w700),
+                style: font.copyWith(fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.onSurface),
                 decoration: InputDecoration(
-                  hintText: 'e.g. Clean your room',
-                  hintStyle: GoogleFonts.nunito(color: AppColors.textSub.withValues(alpha: 0.5)),
+                  hintText: AppStrings.get(context, 'missionTitleHint'),
+                  hintStyle: font.copyWith(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3)),
                   prefixIcon: const Icon(Icons.emoji_flags, color: AppColors.primaryStrong),
                   filled: true,
-                  fillColor: AppColors.white,
+                  fillColor: Theme.of(context).cardColor,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(20),
                     borderSide: BorderSide.none,
                   ),
                 ),
                 validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'Enter a title' : null,
+                    (v == null || v.trim().isEmpty) ? AppStrings.get(context, 'enterTitle') : null,
               ),
               const SizedBox(height: 24),
 
-              _sectionLabel('Description (optional)'),
+              _sectionLabel(AppStrings.get(context, 'missionDesc'), font),
               const SizedBox(height: 10),
               TextFormField(
                 controller: _descriptionController,
                 maxLines: 3,
-                style: GoogleFonts.nunito(fontWeight: FontWeight.w600),
+                style: font.copyWith(fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface),
                 decoration: InputDecoration(
-                  hintText: 'Add details about this mission...',
-                  hintStyle: GoogleFonts.nunito(color: AppColors.textSub.withValues(alpha: 0.5)),
+                  hintText: AppStrings.get(context, 'missionDescHint'),
+                  hintStyle: font.copyWith(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3)),
                   prefixIcon: const Icon(Icons.description, color: AppColors.primaryStrong),
                   filled: true,
-                  fillColor: AppColors.white,
+                  fillColor: Theme.of(context).cardColor,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(20),
                     borderSide: BorderSide.none,
@@ -150,31 +178,53 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
               ),
               const SizedBox(height: 32),
 
-              _sectionLabel('Coin Reward 🪙'),
+              _sectionLabel(AppStrings.get(context, 'difficultyLevel'), font),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(child: _difficultyButton('easy', AppStrings.get(context, 'easy'), font)),
+                  const SizedBox(width: 8),
+                  Expanded(child: _difficultyButton('medium', AppStrings.get(context, 'medium'), font)),
+                  const SizedBox(width: 8),
+                  Expanded(child: _difficultyButton('hard', AppStrings.get(context, 'hard'), font)),
+                ],
+              ),
+              const SizedBox(height: 32),
+
+              _sectionLabel(AppStrings.get(context, 'coinReward'), font),
               const SizedBox(height: 16),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
                 decoration: BoxDecoration(
-                  color: AppColors.white,
+                  color: Theme.of(context).cardColor,
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: AppColors.softShadow,
                 ),
                 child: Column(
                   children: [
                     Text(
-                      '$_points Coins',
-                      style: GoogleFonts.nunito(
+                      '$_points ${AppStrings.get(context, 'coins')}',
+                      style: GoogleFonts.cairo(
                         fontSize: 32,
                         fontWeight: FontWeight.w900,
                         color: AppColors.rewardColor,
                       ),
                     ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '+$_fixedXp XP',
+                      style: GoogleFonts.cairo(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                      ),
+                    ),
                     const SizedBox(height: 12),
                     Slider(
                       value: _points.toDouble(),
-                      min: 5,
-                      max: 100,
-                      divisions: 19,
+                      min: _minCoins.toDouble(),
+                      max: _maxCoins.toDouble(),
+                      divisions: (_maxCoins - _minCoins) > 0 ? (_maxCoins - _minCoins) : 1,
                       activeColor: AppColors.rewardColor,
                       inactiveColor: AppColors.rewardColor.withValues(alpha: 0.1),
                       onChanged: (v) => setState(() => _points = v.round()),
@@ -182,8 +232,8 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('5', style: GoogleFonts.nunito(color: AppColors.textSub, fontWeight: FontWeight.w800)),
-                        Text('100', style: GoogleFonts.nunito(color: AppColors.textSub, fontWeight: FontWeight.w800)),
+                        Text('$_minCoins', style: GoogleFonts.cairo(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6), fontWeight: FontWeight.w800)),
+                        Text('$_maxCoins', style: GoogleFonts.cairo(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6), fontWeight: FontWeight.w800)),
                       ],
                     ),
                   ],
@@ -191,7 +241,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
               ),
               const SizedBox(height: 32),
 
-              _sectionLabel('Deadline (optional)'),
+              _sectionLabel(AppStrings.get(context, 'deadlineOptional'), font),
               const SizedBox(height: 10),
               GestureDetector(
                 onTap: _pickDeadline,
@@ -199,7 +249,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
                   decoration: BoxDecoration(
-                    color: AppColors.white,
+                    color: Theme.of(context).cardColor,
                     borderRadius: BorderRadius.circular(24),
                     boxShadow: AppColors.softShadow,
                   ),
@@ -211,75 +261,26 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                       Text(
                         _deadline != null
                             ? DateFormat('MMMM d, yyyy').format(_deadline!)
-                            : 'No deadline — pick a date',
-                        style: GoogleFonts.nunito(
+                            : AppStrings.get(context, 'noDeadlineHint'),
+                        style: GoogleFonts.cairo(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
                           color: _deadline != null
-                              ? AppColors.textMain
-                              : AppColors.textSub,
+                              ? Theme.of(context).colorScheme.onSurface
+                              : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                         ),
                       ),
                       const Spacer(),
                       if (_deadline != null)
                         IconButton(
                           onPressed: () => setState(() => _deadline = null),
-                          icon: const Icon(Icons.close,
-                              color: AppColors.textSub, size: 20),
+                          icon: Icon(Icons.close,
+                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5), size: 20),
                         ),
                     ],
                   ),
                 ),
               ),
-              const SizedBox(height: 32),
-
-              _sectionLabel('Assign to Hero'),
-              const SizedBox(height: 10),
-              if (childProvider.children.isEmpty)
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: AppColors.error.withValues(alpha: 0.05),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: AppColors.error.withValues(alpha: 0.2)),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.warning_amber,
-                          color: AppColors.error, size: 24),
-                      const SizedBox(width: 12),
-                      Text(
-                        'No heroes yet! Add a child first.',
-                        style: GoogleFonts.nunito(
-                            fontSize: 14, color: AppColors.error, fontWeight: FontWeight.w700),
-                      ),
-                    ],
-                  ),
-                )
-              else
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  decoration: BoxDecoration(
-                    color: AppColors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: AppColors.softShadow,
-                  ),
-                  child: DropdownButtonFormField<UserModel>(
-                    value: _selectedChild,
-                    hint: Text('Select a hero', style: GoogleFonts.nunito(color: AppColors.textSub)),
-                    decoration: const InputDecoration(
-                      border: InputBorder.none,
-                      prefixIcon: Icon(Icons.person, color: AppColors.primaryStrong),
-                    ),
-                    items: childProvider.children
-                        .map((c) => DropdownMenuItem(
-                              value: c,
-                              child: Text(c.name, style: GoogleFonts.nunito(fontWeight: FontWeight.w700)),
-                            ))
-                        .toList(),
-                    onChanged: (v) => setState(() => _selectedChild = v),
-                  ),
-                ),
               const SizedBox(height: 48),
 
               // Submit button
@@ -292,7 +293,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                     : ElevatedButton.icon(
                         onPressed: _submit,
                         icon: const Icon(Icons.send),
-                        label: const Text('Launch Mission!'),
+                        label: Text(AppStrings.get(context, 'launchMission'), style: GoogleFonts.cairo(fontWeight: FontWeight.w800)),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primaryStrong,
                           foregroundColor: Colors.white,
@@ -301,7 +302,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(24),
                           ),
-                          textStyle: GoogleFonts.nunito(fontSize: 18, fontWeight: FontWeight.w900),
+                          textStyle: GoogleFonts.cairo(fontSize: 18, fontWeight: FontWeight.w900),
                         ),
                       ),
               ),
@@ -313,16 +314,51 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     );
   }
 
-  Widget _sectionLabel(String label) {
+  Widget _sectionLabel(String label, TextStyle font) {
     return Padding(
       padding: const EdgeInsets.only(left: 4),
       child: Text(
         label,
-        style: GoogleFonts.nunito(
+        style: font.copyWith(
           fontSize: 14,
           fontWeight: FontWeight.w900,
-          color: AppColors.textMain,
+          color: Theme.of(context).colorScheme.onSurface,
           letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+
+  Widget _difficultyButton(String value, String label, TextStyle font) {
+    final isSelected = _difficulty == value;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _difficulty = value;
+          // Ensure points stay within the new valid range
+          if (_points < _minCoins) _points = _minCoins;
+          if (_points > _maxCoins) _points = _maxCoins;
+        });
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primaryStrong : Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? AppColors.primaryStrong : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+            width: 2,
+          ),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          style: font.copyWith(
+            fontSize: 14,
+            fontWeight: FontWeight.w800,
+            color: isSelected ? Colors.white : Theme.of(context).colorScheme.onSurface,
+          ),
         ),
       ),
     );

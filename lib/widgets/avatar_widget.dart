@@ -49,7 +49,7 @@ class AvatarWidget extends StatelessWidget {
           shape: BoxShape.circle,
           color: bgColor,
           border: Border.all(
-            color: isSelected ? AppColors.primaryStrong : Colors.white,
+            color: isSelected ? AppColors.primaryStrong : Theme.of(context).cardColor,
             width: isSelected ? 3 : 2,
           ),
           boxShadow: [

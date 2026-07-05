@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:confetti/confetti.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_strings.dart';
 
 /// Celebration screen — shown after completing a mission
 /// Full-screen confetti with points earned animation
@@ -37,7 +38,7 @@ class _CelebrationScreenState extends State<CelebrationScreen> {
     final int points = (ModalRoute.of(context)!.settings.arguments as int?) ?? 10;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
           // Background gradient
@@ -94,21 +95,21 @@ class _CelebrationScreenState extends State<CelebrationScreen> {
 
                   // Mission Complete title
                   Text(
-                    'Mission Complete!',
-                    style: GoogleFonts.nunito(
+                    AppStrings.get(context, 'missionCompleteTitle'),
+                    style: GoogleFonts.cairo(
                       fontSize: 40,
                       fontWeight: FontWeight.w900,
-                      color: AppColors.textMain,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ).animate().fadeIn(delay: 300.ms, duration: 400.ms).slideY(begin: 0.3, end: 0),
 
                   const SizedBox(height: 8),
 
                   Text(
-                    'You\'re a true hero! 🦸',
-                    style: GoogleFonts.nunito(
+                    AppStrings.get(context, 'trueHero'),
+                    style: GoogleFonts.cairo(
                       fontSize: 18,
-                      color: AppColors.textSub,
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                       fontWeight: FontWeight.w700,
                     ),
                   ).animate().fadeIn(delay: 450.ms, duration: 400.ms),
@@ -136,8 +137,8 @@ class _CelebrationScreenState extends State<CelebrationScreen> {
                     child: Column(
                       children: [
                         Text(
-                          '+$points',
-                          style: GoogleFonts.nunito(
+                          '$points+',
+                          style: GoogleFonts.cairo(
                             fontSize: 72,
                             fontWeight: FontWeight.w900,
                             color: Colors.white,
@@ -148,16 +149,16 @@ class _CelebrationScreenState extends State<CelebrationScreen> {
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Text('🪙', style: TextStyle(fontSize: 24)),
-                            const SizedBox(width: 8),
                             Text(
-                              'Coins Earned!',
-                              style: GoogleFonts.nunito(
+                              AppStrings.get(context, 'coinsEarnedLabel'),
+                              style: GoogleFonts.cairo(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w800,
                                 color: Colors.white,
                               ),
                             ),
+                            const SizedBox(width: 8),
+                            const Text('🪙', style: TextStyle(fontSize: 24)),
                           ],
                         ),
                       ],
@@ -183,10 +184,10 @@ class _CelebrationScreenState extends State<CelebrationScreen> {
                       boxShadow: AppColors.softShadow,
                     ),
                     child: Text(
-                      '⏳ Waiting for parent approval...',
-                      style: GoogleFonts.nunito(
+                      '...${AppStrings.get(context, 'waitingApproval')} ⌛',
+                      style: GoogleFonts.cairo(
                         fontSize: 14,
-                        color: AppColors.textSub,
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -214,12 +215,18 @@ class _CelebrationScreenState extends State<CelebrationScreen> {
                             borderRadius: BorderRadius.circular(24),
                           ),
                         ),
-                        child: Text(
-                          'Continue Adventure! 🚀',
-                          style: GoogleFonts.nunito(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w900,
-                          ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Text('🚀 ', style: TextStyle(fontSize: 20)),
+                            Text(
+                              AppStrings.get(context, 'continueAdventure'),
+                              style: GoogleFonts.cairo(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),

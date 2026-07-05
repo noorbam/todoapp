@@ -60,6 +60,10 @@ class AuthService {
           .set(newParent.toMap());
       return newParent;
     } catch (e) {
+      if (e.toString().contains('ApiException: 10')) {
+        throw Exception(
+            'فشل تسجيل الدخول بـ Google: يجب إضافة بصمة SHA-1 في إعدادات Firebase (ApiException: 10)');
+      }
       throw Exception('Google Sign-In failed: $e');
     }
   }
@@ -219,9 +223,11 @@ class AuthService {
       case 'too-many-requests':
         return 'محاولات كثيرة، حاول لاحقاً';
       case 'invalid-credential':
-        return 'البريد أو كلمة المرور غير صحيحة';
+        return 'البريد أو كلمة المرور غير صحيحة. تأكد من إدخالها صحيحاً أو قم بإنشاء حساب جديد.';
+      case 'operation-not-allowed':
+        return 'تسجيل الدخول بهذه الطريقة غير مفعل. الرجاء تفعيله من لوحة تحكم Firebase.';
       default:
-        return 'خطأ في المصادقة: $code';
+        return 'البريد الإلكتروني غير مسجل أو توجد مشكلة في الاتصال. ($code)';
     }
   }
 }

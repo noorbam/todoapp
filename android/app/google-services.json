@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "167490502893-5h0kcu5rmnuspnsuihodninars98c2a0.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.kidquest.todo_game",
+            "certificate_hash": "3a33b11ef2bb784c63de83459e55e70367a69ecf"
+          }
+        },
+        {
           "client_id": "167490502893-1ucg1f5d7bvr7789dkkam6hmqmsl8r6e.apps.googleusercontent.com",
           "client_type": 3
         }

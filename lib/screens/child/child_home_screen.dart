@@ -1,18 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:confetti/confetti.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_strings.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/task_provider.dart';
 import '../../providers/progress_provider.dart';
 import '../../widgets/avatar_widget.dart';
-import '../../widgets/coin_counter.dart';
-import '../../widgets/level_bar.dart';
-import '../../widgets/streak_badge.dart';
 import '../../widgets/mission_card.dart';
+import '../../widgets/xp_progress_card.dart';
+import '../../models/badge_model.dart';
 
-/// Child Home Screen — the main game hub for kids
+import 'missions_screen.dart';
+import 'rewards_screen.dart';
+import 'profile_screen.dart';
+
 class ChildHomeScreen extends StatefulWidget {
   const ChildHomeScreen({super.key});
 
@@ -21,10 +25,27 @@ class ChildHomeScreen extends StatefulWidget {
 }
 
 class _ChildHomeScreenState extends State<ChildHomeScreen> {
+  int _currentIndex = 0;
+  ConfettiController? _confettiController;
+  late List<Widget> _pages;
+
+  ConfettiController get confettiController {
+    _confettiController ??= ConfettiController(duration: const Duration(seconds: 2));
+    return _confettiController!;
+  }
 
   @override
   void initState() {
     super.initState();
+    _confettiController = ConfettiController(duration: const Duration(seconds: 2));
+    
+    _pages = [
+      _ChildDashboardView(confettiController: confettiController),
+      MissionsScreen(isTab: true, confettiController: confettiController),
+      const RewardsScreen(isTab: true),
+      const ProfileScreen(isTab: true),
+    ];
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final child = context.read<AuthProvider>().currentUser;
       if (child != null) {
@@ -35,221 +56,87 @@ class _ChildHomeScreenState extends State<ChildHomeScreen> {
   }
 
   @override
+  void dispose() {
+    _confettiController?.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
-    final progressProvider = context.watch<ProgressProvider>();
-    final taskProvider = context.watch<TaskProvider>();
     final child = authProvider.currentUser;
 
     if (child == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    final activeTasks = taskProvider.activeTasks.take(3).toList();
-
     return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: RefreshIndicator(
-          color: AppColors.primaryStrong,
-          onRefresh: () async {
-            context.read<TaskProvider>().listenToChildTasks(child.id);
-          },
-          child: CustomScrollView(
-            slivers: [
-              // ── Hero Header ──────────────────────────────────────────────
-              SliverToBoxAdapter(
-                child: Container(
-                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Color(0xFFAEE2FF), Color(0xFFAFA8FF)], // Soft Blue to Soft Purple
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.only(
-                      bottomLeft: Radius.circular(40),
-                      bottomRight: Radius.circular(40),
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      // Top row: avatar + name + coins
-                      Row(
-                        children: [
-                          AvatarWidget(
-                            avatarIndex: child.avatarIndex,
-                            size: 64,
-                          ).animate().scale(begin: const Offset(0.5, 0.5), duration: 400.ms, curve: Curves.elasticOut),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Hey, ${child.name}! 👋',
-                                  style: GoogleFonts.nunito(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.w900,
-                                    color: AppColors.textMain,
-                                  ),
-                                ).animate().fadeIn(delay: 150.ms, duration: 400.ms),
-                                StreakBadge(streak: progressProvider.streak),
-                              ],
-                            ),
-                          ),
-                          CoinCounter(coins: progressProvider.points),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-                      // XP bar
-                      LevelBar(
-                        level: progressProvider.level,
-                        xp: progressProvider.xp,
-                      ).animate().fadeIn(delay: 300.ms, duration: 400.ms),
-                    ],
-                  ),
-                ),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: Stack(
+        children: [
+          IndexedStack(
+            index: _currentIndex,
+            children: _pages,
+          ),
+          // Confetti Overlay
+          Align(
+            alignment: Alignment.center,
+            child: ConfettiWidget(
+              confettiController: confettiController,
+              blastDirectionality: BlastDirectionality.explosive,
+              shouldLoop: false,
+              colors: const [
+                AppColors.primaryStrong,
+                AppColors.rewardColor,
+                AppColors.success,
+                Colors.orange,
+                Colors.pink,
+              ],
+              numberOfParticles: 30,
+              gravity: 0.2,
+            ),
+          ),
+        ],
+      ),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primaryStrong.withValues(alpha: 0.1),
+              blurRadius: 20,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          child: BottomNavigationBar(
+            currentIndex: _currentIndex,
+            onTap: (index) => setState(() => _currentIndex = index),
+            backgroundColor: Theme.of(context).cardColor,
+            selectedItemColor: AppColors.primaryStrong,
+            unselectedItemColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
+            selectedLabelStyle: GoogleFonts.cairo(fontWeight: FontWeight.w800, fontSize: 13),
+            unselectedLabelStyle: GoogleFonts.cairo(fontWeight: FontWeight.w600, fontSize: 12),
+            type: BottomNavigationBarType.fixed,
+            elevation: 0,
+            items: [
+              BottomNavigationBarItem(
+                icon: const Icon(Icons.home_rounded),
+                label: AppStrings.get(context, 'hey').replaceAll('،', '').trim(),
               ),
-
-              // ── Quick Actions ────────────────────────────────────────────
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 28, 24, 0),
-                  child: Row(
-                    children: [
-                      _QuickActionCard(
-                        emoji: '⚔️',
-                        label: 'Missions',
-                        gradient: AppColors.taskGradient,
-                        onTap: () => Navigator.pushNamed(context, '/missions'),
-                      ),
-                      const SizedBox(width: 16),
-                      _QuickActionCard(
-                        emoji: '🎁',
-                        label: 'Rewards',
-                        gradient: AppColors.rewardGradient,
-                        onTap: () => Navigator.pushNamed(context, '/rewards'),
-                      ),
-                      const SizedBox(width: 16),
-                      _QuickActionCard(
-                        emoji: '🧑‍🎤',
-                        label: 'Profile',
-                        gradient: AppColors.progressGradient,
-                        onTap: () => Navigator.pushNamed(context, '/profile'),
-                      ),
-                    ],
-                  ).animate().fadeIn(delay: 400.ms, duration: 400.ms),
-                ),
+              BottomNavigationBarItem(
+                icon: const Icon(Icons.check_circle_rounded),
+                label: AppStrings.get(context, 'myMissions').replaceAll('⚔️ ', ''),
               ),
-
-              // ── Active Missions Preview ──────────────────────────────────
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 32, 24, 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '⚔️ Active Missions',
-                        style: GoogleFonts.nunito(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.textMain,
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.pushNamed(context, '/missions'),
-                        child: Text(
-                          'See All',
-                          style: GoogleFonts.nunito(
-                            color: AppColors.primaryStrong,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              BottomNavigationBarItem(
+                icon: const Icon(Icons.card_giftcard_rounded),
+                label: AppStrings.get(context, 'rewardsShop').replaceAll('🎁 ', ''),
               ),
-
-              // Mission cards
-              if (taskProvider.isLoading)
-                const SliverToBoxAdapter(
-                  child: Center(child: CircularProgressIndicator(color: AppColors.primaryStrong)),
-                )
-              else if (activeTasks.isEmpty)
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-                    child: Container(
-                      padding: const EdgeInsets.all(32),
-                      decoration: BoxDecoration(
-                        color: AppColors.white,
-                        borderRadius: BorderRadius.circular(32),
-                        boxShadow: AppColors.softShadow,
-                      ),
-                      child: Column(
-                        children: [
-                          const Text('🎉', style: TextStyle(fontSize: 52)),
-                          const SizedBox(height: 12),
-                          Text(
-                            'No active missions!\nAsk a parent to assign you one.',
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.nunito(
-                              fontSize: 18,
-                              color: AppColors.textSub,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                )
-              else
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final task = activeTasks[index];
-                        return MissionCard(
-                          task: task,
-                          colorIndex: index,
-                          onComplete: () async {
-                            final success = await context.read<TaskProvider>().completeTask(task.id);
-                            if (!mounted) return;
-                            if (success) {
-                              Navigator.pushNamed(
-                                context,
-                                '/celebration',
-                                arguments: task.points,
-                              );
-                            }
-                          },
-                        ).animate(delay: (index * 100).ms).fadeIn(duration: 300.ms).slideY(begin: 0.1, end: 0);
-                      },
-                      childCount: activeTasks.length,
-                    ),
-                  ),
-                ),
-
-              // Sign out
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 40),
-                  child: TextButton.icon(
-                    onPressed: () async {
-                      await context.read<AuthProvider>().signOut();
-                      if (!mounted) return;
-                      Navigator.pushReplacementNamed(context, '/login');
-                    },
-                    icon: const Icon(Icons.logout, color: AppColors.textSub, size: 18),
-                    label: Text('Switch Hero', style: GoogleFonts.nunito(color: AppColors.textSub, fontSize: 14, fontWeight: FontWeight.w700)),
-                  ),
-                ),
+              BottomNavigationBarItem(
+                icon: const Icon(Icons.person_rounded),
+                label: AppStrings.get(context, 'profile'),
               ),
             ],
           ),
@@ -259,54 +146,139 @@ class _ChildHomeScreenState extends State<ChildHomeScreen> {
   }
 }
 
-/// Quick action card for home screen navigation
-class _QuickActionCard extends StatelessWidget {
-  final String emoji;
-  final String label;
-  final List<Color> gradient;
-  final VoidCallback onTap;
-
-  const _QuickActionCard({
-    required this.emoji,
-    required this.label,
-    required this.gradient,
-    required this.onTap,
-  });
+class _ChildDashboardView extends StatelessWidget {
+  final ConfettiController confettiController;
+  const _ChildDashboardView({required this.confettiController});
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(colors: gradient, begin: Alignment.topLeft, end: Alignment.bottomRight),
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: gradient[0].withValues(alpha: 0.2),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
+    final authProvider = context.watch<AuthProvider>();
+    final progressProvider = context.watch<ProgressProvider>();
+    final taskProvider = context.watch<TaskProvider>();
+    final child = authProvider.currentUser!;
+
+    final activeTasks = taskProvider.activeTasks.take(3).toList();
+
+    return RefreshIndicator(
+      color: AppColors.primaryStrong,
+      onRefresh: () async {
+        context.read<TaskProvider>().listenToChildTasks(child.id);
+      },
+      child: CustomScrollView(
+        slivers: [
+          // Merged Header + XP Card
+          SliverToBoxAdapter(
+            child: XPProgressCard(
+              level: progressProvider.level,
+              xp: progressProvider.xp,
+              streak: progressProvider.streak,
+              earnedBadges: BadgeModel.allBadges.where((b) => progressProvider.xp >= b.requiredXp).length,
+              totalBadges: BadgeModel.allBadges.length,
+              childName: child.name,
+              coins: progressProvider.points,
+              avatarWidget: AvatarWidget(avatarIndex: child.avatarIndex, size: 60),
+            ),
           ),
-          child: Column(
-            children: [
-              Text(emoji, style: const TextStyle(fontSize: 32)),
-              const SizedBox(height: 6),
-              Text(
-                label,
-                style: GoogleFonts.nunito(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.white,
+
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 32, 24, 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    AppStrings.get(context, 'recentTasks'),
+                    style: GoogleFonts.cairo(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      final state = context.findAncestorStateOfType<_ChildHomeScreenState>();
+                      if (state != null) {
+                        state.setState(() {
+                          state._currentIndex = 1;
+                        });
+                      }
+                    },
+                    child: Text(
+                      AppStrings.get(context, 'seeAll'),
+                      style: GoogleFonts.cairo(
+                        color: AppColors.primaryStrong,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          if (taskProvider.isLoading)
+            const SliverToBoxAdapter(
+              child: Center(child: CircularProgressIndicator(color: AppColors.primaryStrong)),
+            )
+          else if (activeTasks.isEmpty)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                child: Container(
+                  padding: const EdgeInsets.all(32),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    borderRadius: BorderRadius.circular(28),
+                    boxShadow: AppColors.softShadow,
+                  ),
+                  child: Column(
+                    children: [
+                      const Text('🎉', style: TextStyle(fontSize: 52))
+                          .animate(onPlay: (c) => c.repeat(reverse: true))
+                          .scale(begin: const Offset(1, 1), end: const Offset(1.1, 1.1), duration: 1.seconds)
+                          .rotate(begin: -0.05, end: 0.05, curve: Curves.easeInOut),
+                      const SizedBox(height: 12),
+                      Text(
+                        AppStrings.get(context, 'allCaughtUp'),
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.cairo(
+                          fontSize: 16,
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ],
-          ),
-        ),
+            )
+          else
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    final task = activeTasks[index];
+                    return MissionCard(
+                      task: task,
+                      colorIndex: index,
+                      onComplete: () async {
+                        // Navigate immediately for instant feedback
+                        Navigator.pushNamed(context, '/celebration', arguments: task.points);
+                        // Update Firestore in background
+                        context.read<TaskProvider>().completeTask(task.id);
+                      },
+                    ).animate(delay: (index * 100).ms).fadeIn(duration: 300.ms).slideY(begin: 0.1, end: 0);
+                  },
+                  childCount: activeTasks.length,
+                ),
+              ),
+            ),
+
+          const SliverToBoxAdapter(child: SizedBox(height: 40)),
+        ],
       ),
-    );
+    ).animate().fadeIn(duration: 400.ms);
   }
 }

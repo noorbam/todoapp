@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/constants/app_strings.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
@@ -52,25 +53,24 @@ class _ChildLoginScreenState extends State<ChildLoginScreen> {
         builder: (ctx, setDialogState) {
           final authProvider = context.watch<AuthProvider>();
           return AlertDialog(
-            backgroundColor: AppColors.white,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
+            backgroundColor: Theme.of(context).cardColor,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
             title: Column(
               children: [
                 AvatarWidget(avatarIndex: child.avatarIndex, size: 80),
                 const SizedBox(height: 16),
                 Text(
-                  'أهلاً، ${child.name}! 👋',
+                  '${AppStrings.get(context, 'hello')} ${child.name}! 👋',
                   style: GoogleFonts.cairo(
-                    color: AppColors.textMain,
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontSize: 22,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
                 Text(
-                  'أدخل الرمز السري',
+                  AppStrings.get(context, 'enterPin'),
                   style: GoogleFonts.cairo(
-                    color: AppColors.textSub,
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                   ),
@@ -86,41 +86,55 @@ class _ChildLoginScreenState extends State<ChildLoginScreen> {
                   obscureText: true,
                   maxLength: 4,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.nunito(
+                  style: GoogleFonts.cairo(
                     fontSize: 32,
                     fontWeight: FontWeight.w900,
-                    color: AppColors.textMain,
+                    color: Theme.of(context).colorScheme.onSurface,
                     letterSpacing: 16,
                   ),
+                  onChanged: (val) async {
+                    if (val.length == 4 && !authProvider.isLoading) {
+                      setDialogState(() => _pinError = null);
+                      final success = await context.read<AuthProvider>().childLogin(
+                        child.id,
+                        val,
+                      );
+
+                      if (!mounted) return;
+
+                      if (success) {
+                        Navigator.pop(ctx);
+                        Navigator.pushReplacementNamed(context, '/child-home');
+                      } else {
+                        setDialogState(() => _pinError = AppStrings.get(context, 'wrongPin'));
+                      }
+                    }
+                  },
                   decoration: InputDecoration(
                     counterText: '',
                     hintText: '••••',
-                    hintStyle: TextStyle(
-                        color: AppColors.textSub.withValues(alpha: 0.3), letterSpacing: 16),
+                    hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.2), letterSpacing: 16),
                     errorText: _pinError,
                     errorStyle: GoogleFonts.cairo(color: AppColors.error, fontWeight: FontWeight.w700),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(20),
-                      borderSide: BorderSide(color: AppColors.textSub.withValues(alpha: 0.1)),
+                      borderSide: BorderSide(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(20),
-                      borderSide:
-                          const BorderSide(color: AppColors.primaryStrong, width: 2.5),
+                      borderSide: const BorderSide(color: AppColors.primaryStrong, width: 2.5),
                     ),
                     filled: true,
-                    fillColor: Colors.black.withValues(alpha: 0.03),
+                    fillColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.03),
                   ),
                 ),
               ],
             ),
             actions: [
               TextButton(
-                onPressed: () {
-                  Navigator.pop(ctx);
-                },
-                child: Text('إلغاء',
-                    style: GoogleFonts.cairo(color: AppColors.textSub, fontWeight: FontWeight.w700)),
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(AppStrings.get(context, 'cancel'),
+                    style: GoogleFonts.cairo(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6), fontWeight: FontWeight.w700)),
               ),
               ElevatedButton(
                 onPressed: authProvider.isLoading
@@ -136,11 +150,9 @@ class _ChildLoginScreenState extends State<ChildLoginScreen> {
 
                         if (success) {
                           Navigator.pop(ctx);
-                          Navigator.pushReplacementNamed(
-                              context, '/child-home');
+                          Navigator.pushReplacementNamed(context, '/child-home');
                         } else {
-                          setDialogState(
-                              () => _pinError = 'الرمز خاطئ! حاول مجدداً 🔒');
+                          setDialogState(() => _pinError = AppStrings.get(context, 'wrongPin'));
                         }
                       },
                 style: ElevatedButton.styleFrom(
@@ -153,11 +165,10 @@ class _ChildLoginScreenState extends State<ChildLoginScreen> {
                     ? const SizedBox(
                         width: 20,
                         height: 20,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white),
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                       )
                     : Text(
-                        "هيا نلعب! 🎮",
+                        AppStrings.get(context, 'letsPlay'),
                         style: GoogleFonts.cairo(fontWeight: FontWeight.w900, fontSize: 16),
                       ),
               ),
@@ -174,10 +185,13 @@ class _ChildLoginScreenState extends State<ChildLoginScreen> {
     final children = childProvider.children;
 
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFFE0F7FA), Color(0xFFE8EAF6)],
+            colors: Theme.of(context).brightness == Brightness.dark
+                ? [AppColors.darkBackground, AppColors.darkSurface]
+                : [const Color(0xFFE0F7FA), const Color(0xFFE8EAF6)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -187,23 +201,21 @@ class _ChildLoginScreenState extends State<ChildLoginScreen> {
             children: [
               // Header
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
                 child: Row(
                   children: [
                     IconButton(
                       onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.arrow_back_ios,
-                          color: AppColors.primaryStrong),
+                      icon: const Icon(Icons.arrow_back_ios, color: AppColors.primaryStrong),
                     ),
                     Expanded(
                       child: Text(
-                        'اختر بطلك! ⚔️',
+                        AppStrings.get(context, 'chooseHero'),
                         textAlign: TextAlign.center,
                         style: GoogleFonts.cairo(
                           fontSize: 24,
                           fontWeight: FontWeight.w900,
-                          color: AppColors.textMain,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                     ),
@@ -215,26 +227,22 @@ class _ChildLoginScreenState extends State<ChildLoginScreen> {
               // Children grid
               Expanded(
                 child: childProvider.isLoading
-                    ? const Center(
-                        child: CircularProgressIndicator(
-                            color: AppColors.primaryStrong),
-                      )
+                    ? const Center(child: CircularProgressIndicator(color: AppColors.primaryStrong))
                     : children.isEmpty
                         ? Center(
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Text('😢',
-                                    style: TextStyle(fontSize: 72))
-                                .animate()
-                                .scale(begin: const Offset(0, 0), duration: 500.ms, curve: Curves.elasticOut),
+                                const Text('😢', style: TextStyle(fontSize: 72))
+                                    .animate()
+                                    .scale(begin: const Offset(0, 0), duration: 500.ms, curve: Curves.elasticOut),
                                 const SizedBox(height: 24),
                                 Text(
-                                  'لا يوجد أبطال بعد!\nاطلب من والدك إنشاء حساب لك.',
+                                  AppStrings.get(context, 'noHeroes'),
                                   textAlign: TextAlign.center,
                                   style: GoogleFonts.cairo(
                                     fontSize: 18,
-                                    color: AppColors.textSub,
+                                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
@@ -242,10 +250,8 @@ class _ChildLoginScreenState extends State<ChildLoginScreen> {
                             ),
                           )
                         : GridView.builder(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 24, vertical: 12),
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                               crossAxisCount: 2,
                               childAspectRatio: 0.82,
                               crossAxisSpacing: 20,
@@ -258,32 +264,29 @@ class _ChildLoginScreenState extends State<ChildLoginScreen> {
                                 onTap: () => _selectChild(child),
                                 child: Container(
                                   decoration: BoxDecoration(
-                                    color: AppColors.white,
+                                    color: Theme.of(context).cardColor,
                                     borderRadius: BorderRadius.circular(32),
                                     boxShadow: AppColors.softShadow,
                                   ),
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      AvatarWidget(
-                                        avatarIndex: child.avatarIndex,
-                                        size: 90,
-                                      ),
+                                      AvatarWidget(avatarIndex: child.avatarIndex, size: 90),
                                       const SizedBox(height: 16),
                                       Text(
                                         child.name,
                                         style: GoogleFonts.cairo(
                                           fontSize: 18,
                                           fontWeight: FontWeight.w900,
-                                          color: AppColors.textMain,
+                                          color: Theme.of(context).colorScheme.onSurface,
                                         ),
                                       ),
                                       const SizedBox(height: 6),
                                       Text(
-                                        '🔒 اضغط للعب!',
+                                        '🔒 ${AppStrings.get(context, 'tapToPlay')}',
                                         style: GoogleFonts.cairo(
                                           fontSize: 12,
-                                          color: AppColors.textSub,
+                                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),

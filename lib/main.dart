@@ -16,9 +16,10 @@ import 'providers/reward_provider.dart';
 import 'providers/progress_provider.dart';
 import 'providers/child_provider.dart';
 import 'providers/language_provider.dart';
+import 'providers/theme_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// KidQuest — Gamified To-Do App for Children
+/// Hero Mission — Gamified To-Do App for Children
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -31,7 +32,7 @@ Future<void> main() async {
       backgroundColor: Colors.transparent,
       skipTaskbar: false,
       titleBarStyle: TitleBarStyle.normal,
-      title: 'KidQuest',
+      title: 'Hero Mission',
     );
     windowManager.waitUntilReadyToShow(windowOptions, () async {
       await windowManager.show();
@@ -49,35 +50,40 @@ Future<void> main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => LanguageProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => TaskProvider()),
         ChangeNotifierProvider(create: (_) => RewardProvider()),
         ChangeNotifierProvider(create: (_) => ProgressProvider()),
         ChangeNotifierProvider(create: (_) => ChildProvider()),
       ],
-      child: const KidQuestApp(),
+      child: const HeroMissionApp(),
     ),
   );
 }
 
-class KidQuestApp extends StatelessWidget {
-  const KidQuestApp({super.key});
+class HeroMissionApp extends StatelessWidget {
+  const HeroMissionApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Consumer2<AuthProvider, LanguageProvider>(
-      builder: (context, authProvider, langProvider, _) {
+    return Consumer3<AuthProvider, LanguageProvider, ThemeProvider>(
+      builder: (context, authProvider, langProvider, themeProvider, _) {
         final isChild = authProvider.currentUser?.isChild ?? false;
+        final isDark = themeProvider.isDarkMode;
         final theme = isChild ? AppTheme.childTheme : AppTheme.parentTheme;
+        final darkTheme = AppTheme.darkTheme;
 
         return MaterialApp(
-          title: 'KidQuest',
+          title: langProvider.isArabic ? 'مهمة البطل' : 'Hero Mission',
           debugShowCheckedModeBanner: false,
           theme: theme.copyWith(
-            textTheme: langProvider.isArabic 
-              ? GoogleFonts.cairoTextTheme(theme.textTheme)
-              : GoogleFonts.nunitoTextTheme(theme.textTheme),
+            textTheme: GoogleFonts.cairoTextTheme(theme.textTheme),
           ),
+          darkTheme: darkTheme.copyWith(
+            textTheme: GoogleFonts.cairoTextTheme(darkTheme.textTheme),
+          ),
+          themeMode: themeProvider.themeMode,
           locale: langProvider.currentLocale,
           supportedLocales: const [
             Locale('ar', 'SA'),

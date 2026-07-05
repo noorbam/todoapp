@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../models/user_model.dart';
 import '../models/progress_model.dart';
 import '../core/constants/app_colors.dart';
+import '../core/constants/app_strings.dart';
 import '../core/utils/level_utils.dart';
 import 'avatar_widget.dart';
 
@@ -11,12 +12,16 @@ class ChildSummaryCard extends StatelessWidget {
   final UserModel child;
   final ProgressModel? progress;
   final VoidCallback? onTap;
+  final VoidCallback? onDelete;
+  final int pendingApprovalsCount;
 
   const ChildSummaryCard({
     super.key,
     required this.child,
     this.progress,
     this.onTap,
+    this.onDelete,
+    this.pendingApprovalsCount = 0,
   });
 
   @override
@@ -33,7 +38,7 @@ class ChildSummaryCard extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: AppColors.white,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(24),
           boxShadow: AppColors.softShadow,
         ),
@@ -52,15 +57,15 @@ class ChildSummaryCard extends StatelessWidget {
                     children: [
                       Text(
                         child.name,
-                        style: GoogleFonts.nunito(
+                        style: GoogleFonts.cairo(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
-                          color: AppColors.textMain,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Text('$emoji Lv.$level',
-                          style: GoogleFonts.nunito(
+                      Text('$emoji ${AppStrings.get(context, 'levelShort')}$level',
+                          style: GoogleFonts.cairo(
                             fontSize: 13,
                             color: AppColors.primaryStrong,
                             fontWeight: FontWeight.w700,
@@ -73,7 +78,7 @@ class ChildSummaryCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(6),
                     child: LinearProgressIndicator(
                       value: progressValue,
-                      backgroundColor: Colors.black.withValues(alpha: 0.05),
+                      backgroundColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
                       valueColor: const AlwaysStoppedAnimation<Color>(
                         AppColors.primaryStrong,
                       ),
@@ -81,17 +86,27 @@ class ChildSummaryCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  Row(
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       _StatChip('🪙 $points', AppColors.rewardColor),
-                      const SizedBox(width: 10),
                       _StatChip('🔥 $streak days', Colors.orange),
+                      if (pendingApprovalsCount > 0)
+                        _StatChip('$pendingApprovalsCount 🔔', AppColors.error),
                     ],
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: AppColors.textSub),
+            if (onDelete != null)
+              IconButton(
+                icon: const Icon(Icons.delete_outline, color: AppColors.error),
+                onPressed: onDelete,
+              )
+            else
+              Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4)),
           ],
         ),
       ),

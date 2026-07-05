@@ -3,15 +3,16 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_strings.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/reward_provider.dart';
 import '../../providers/progress_provider.dart';
 import '../../widgets/reward_card.dart';
 import '../../widgets/coin_counter.dart';
 
-/// Rewards shop screen — children redeem coins for parent-created rewards
 class RewardsScreen extends StatefulWidget {
-  const RewardsScreen({super.key});
+  final bool isTab;
+  const RewardsScreen({super.key, this.isTab = false});
 
   @override
   State<RewardsScreen> createState() => _RewardsScreenState();
@@ -37,26 +38,26 @@ class _RewardsScreenState extends State<RewardsScreen> {
     final currentCoins = progressProvider.points;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
-            // Header
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
               child: Row(
                 children: [
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.arrow_back_ios, color: AppColors.primaryStrong),
-                  ),
+                  if (!widget.isTab)
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.arrow_back_ios, color: AppColors.primaryStrong),
+                    ),
                   Expanded(
                     child: Text(
-                      '🎁 Rewards Shop',
-                      style: GoogleFonts.nunito(
+                      AppStrings.get(context, 'rewardsShop'),
+                      style: GoogleFonts.cairo(
                         fontSize: 26,
                         fontWeight: FontWeight.w900,
-                        color: AppColors.textMain,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                   ),
@@ -67,7 +68,6 @@ class _RewardsScreenState extends State<RewardsScreen> {
 
             const SizedBox(height: 16),
 
-            // Balance card
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Container(
@@ -95,18 +95,18 @@ class _RewardsScreenState extends State<RewardsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '$currentCoins Coins',
-                          style: GoogleFonts.nunito(
+                          '$currentCoins ${AppStrings.get(context, 'coins')}',
+                          style: GoogleFonts.cairo(
                             fontSize: 28,
                             fontWeight: FontWeight.w900,
-                            color: AppColors.textMain,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                         Text(
-                          'Available to spend',
-                          style: GoogleFonts.nunito(
+                          AppStrings.get(context, 'coinsAvailable'),
+                          style: GoogleFonts.cairo(
                             fontSize: 14,
-                            color: AppColors.textSub,
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -119,7 +119,6 @@ class _RewardsScreenState extends State<RewardsScreen> {
 
             const SizedBox(height: 24),
 
-            // Rewards grid
             Expanded(
               child: rewardProvider.isLoading
                   ? const Center(child: CircularProgressIndicator(color: AppColors.primaryStrong))
@@ -133,20 +132,20 @@ class _RewardsScreenState extends State<RewardsScreen> {
                                   .scale(begin: const Offset(0, 0), duration: 500.ms, curve: Curves.elasticOut),
                               const SizedBox(height: 24),
                               Text(
-                                'No rewards yet!',
-                                style: GoogleFonts.nunito(
+                                AppStrings.get(context, 'noRewardsYet'),
+                                style: GoogleFonts.cairo(
                                   fontSize: 22,
                                   fontWeight: FontWeight.w900,
-                                  color: AppColors.textMain,
+                                  color: Theme.of(context).colorScheme.onSurface,
                                 ),
                               ),
                               const SizedBox(height: 12),
                               Text(
-                                'Ask a parent to add some\nawesome rewards!',
+                                AppStrings.get(context, 'noRewardsHint'),
                                 textAlign: TextAlign.center,
-                                style: GoogleFonts.nunito(
+                                style: GoogleFonts.cairo(
                                   fontSize: 16,
-                                  color: AppColors.textSub,
+                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -182,17 +181,19 @@ class _RewardsScreenState extends State<RewardsScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.white,
+        backgroundColor: Theme.of(context).cardColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-        title: Text('Redeem Reward? 🎁', style: GoogleFonts.nunito(color: AppColors.textMain, fontWeight: FontWeight.w900)),
+        title: Text(AppStrings.get(context, 'redeemReward'),
+            style: GoogleFonts.cairo(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.w900)),
         content: Text(
-          'Spend ${reward.cost} 🪙 coins for "${reward.title}"?',
-          style: GoogleFonts.nunito(color: AppColors.textSub, fontSize: 16, fontWeight: FontWeight.w600),
+          'Spend ${reward.cost} 🪙 ${AppStrings.get(context, 'coins')} for "${reward.title}"?',
+          style: GoogleFonts.cairo(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6), fontSize: 16, fontWeight: FontWeight.w600),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('Cancel', style: GoogleFonts.nunito(color: AppColors.textSub, fontWeight: FontWeight.w700)),
+            child: Text(AppStrings.get(context, 'cancel'),
+                style: GoogleFonts.cairo(color: AppColors.textSub, fontWeight: FontWeight.w700)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -201,7 +202,8 @@ class _RewardsScreenState extends State<RewardsScreen> {
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             ),
-            child: Text('Redeem!', style: GoogleFonts.nunito(fontWeight: FontWeight.w900)),
+            child: Text(AppStrings.get(context, 'redeem'),
+                style: GoogleFonts.cairo(fontWeight: FontWeight.w900)),
           ),
         ],
       ),
@@ -212,7 +214,9 @@ class _RewardsScreenState extends State<RewardsScreen> {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(success ? '🎉 Reward redeemed! Show it to your parent!' : '❌ Not enough coins!'),
+          content: Text(success
+              ? AppStrings.get(context, 'redeemSuccess')
+              : AppStrings.get(context, 'notEnoughCoins')),
           backgroundColor: success ? AppColors.success : AppColors.error,
         ),
       );

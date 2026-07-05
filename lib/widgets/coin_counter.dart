@@ -6,8 +6,9 @@ import '../core/constants/app_colors.dart';
 class CoinCounter extends StatefulWidget {
   final int coins;
   final double fontSize;
+  final bool isDark;
 
-  const CoinCounter({super.key, required this.coins, this.fontSize = 22});
+  const CoinCounter({super.key, required this.coins, this.fontSize = 22, this.isDark = false});
 
   @override
   State<CoinCounter> createState() => _CoinCounterState();
@@ -75,10 +76,10 @@ class _CoinCounterState extends State<CoinCounter>
             const SizedBox(width: 8),
             Text(
               '$_displayedCoins',
-              style: GoogleFonts.nunito(
+              style: GoogleFonts.cairo(
                 fontSize: widget.fontSize,
                 fontWeight: FontWeight.w900,
-                color: AppColors.textMain,
+                color: widget.isDark ? Colors.white : Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ],

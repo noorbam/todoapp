@@ -1,4 +1,4 @@
-/// KidQuest — Level & XP Utility
+/// Hero Mission — Level & XP Utility
 /// Manages leveling logic for the gamification system
 class LevelUtils {
   /// XP thresholds for each level (cumulative)
@@ -46,6 +46,21 @@ class LevelUtils {
     int level = getLevel(xp);
     if (level >= levelThresholds.length) return 0;
     return levelThresholds[level] - xp;
+  }
+
+  /// XP earned within the current level
+  static int getCurrentLevelXP(int xp) {
+    int level = getLevel(xp);
+    int currentThreshold = levelThresholds[(level - 1).clamp(0, levelThresholds.length - 1)];
+    return xp - currentThreshold;
+  }
+
+  /// Total XP range for the current level
+  static int getLevelTotalXP(int level) {
+    if (level >= levelThresholds.length) return 0;
+    int currentThreshold = levelThresholds[(level - 1).clamp(0, levelThresholds.length - 1)];
+    int nextThreshold = levelThresholds[level];
+    return nextThreshold - currentThreshold;
   }
 
   /// Level title / rank name

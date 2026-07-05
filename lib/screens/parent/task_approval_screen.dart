@@ -4,12 +4,12 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_strings.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/task_provider.dart';
 import '../../models/task_model.dart';
 import '../../widgets/task_approval_card.dart';
 
-/// Task Approval screen — parent reviews and approves/rejects completed tasks
 class TaskApprovalScreen extends StatefulWidget {
   const TaskApprovalScreen({super.key});
 
@@ -30,10 +30,7 @@ class _TaskApprovalScreenState extends State<TaskApprovalScreen> {
   }
 
   Future<String> _getChildName(String childId) async {
-    final doc = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(childId)
-        .get();
+    final doc = await FirebaseFirestore.instance.collection('users').doc(childId).get();
     if (doc.exists) {
       return (doc.data() as Map<String, dynamic>)['name'] ?? 'Unknown';
     }
@@ -45,7 +42,9 @@ class _TaskApprovalScreenState extends State<TaskApprovalScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(success ? '✅ Mission approved! Coins awarded!' : 'Error approving task'),
+        content: Text(success
+            ? AppStrings.get(context, 'approveSuccess')
+            : AppStrings.get(context, 'approveError')),
         backgroundColor: success ? AppColors.success : AppColors.error,
       ),
     );
@@ -55,7 +54,10 @@ class _TaskApprovalScreenState extends State<TaskApprovalScreen> {
     await context.read<TaskProvider>().rejectTask(taskId);
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('❌ Mission rejected.'), backgroundColor: AppColors.error),
+      SnackBar(
+        content: Text(AppStrings.get(context, 'rejectMsg')),
+        backgroundColor: AppColors.error,
+      ),
     );
   }
 
@@ -65,16 +67,13 @@ class _TaskApprovalScreenState extends State<TaskApprovalScreen> {
     final tasks = taskProvider.pendingApprovals;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppColors.white,
+        backgroundColor: Theme.of(context).cardColor,
         elevation: 0,
         title: Text(
-          'Mission Approvals ✅',
-          style: GoogleFonts.nunito(
-            fontWeight: FontWeight.w900,
-            color: AppColors.textMain,
-          ),
+          AppStrings.get(context, 'missionApprovals'),
+          style: GoogleFonts.cairo(fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onSurface),
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: AppColors.primaryStrong),
@@ -93,19 +92,19 @@ class _TaskApprovalScreenState extends State<TaskApprovalScreen> {
                           .scale(begin: const Offset(0, 0), duration: 500.ms, curve: Curves.elasticOut),
                       const SizedBox(height: 24),
                       Text(
-                        'All Clear!',
-                        style: GoogleFonts.nunito(
+                        AppStrings.get(context, 'allClear'),
+                        style: GoogleFonts.cairo(
                           fontSize: 26,
                           fontWeight: FontWeight.w900,
-                          color: AppColors.textMain,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'No missions waiting for approval.',
-                        style: GoogleFonts.nunito(
+                        AppStrings.get(context, 'noPendingApprovals'),
+                        style: GoogleFonts.cairo(
                           fontSize: 16,
-                          color: AppColors.textSub,
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                           fontWeight: FontWeight.w600,
                         ),
                       ),

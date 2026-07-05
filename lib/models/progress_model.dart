@@ -7,6 +7,7 @@ class ProgressModel {
   final int xp; // cumulative XP used for leveling (never decreases)
   final int level;
   final int streak; // consecutive days with at least one approved task
+  final int approvedTasksCount; // total lifetime approved tasks
   final DateTime? lastActivityDate;
   final List<String> badges; // list of earned badge IDs
   final DateTime updatedAt;
@@ -17,6 +18,7 @@ class ProgressModel {
     this.xp = 0,
     this.level = 1,
     this.streak = 0,
+    this.approvedTasksCount = 0,
     this.lastActivityDate,
     this.badges = const [],
     required this.updatedAt,
@@ -31,6 +33,7 @@ class ProgressModel {
       xp: map['xp'] ?? 0,
       level: map['level'] ?? 1,
       streak: map['streak'] ?? 0,
+      approvedTasksCount: map['approvedTasksCount'] ?? 0,
       lastActivityDate: (map['lastActivityDate'] as Timestamp?)?.toDate(),
       badges: List<String>.from(map['badges'] ?? []),
       updatedAt: (map['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
@@ -43,6 +46,7 @@ class ProgressModel {
       'xp': xp,
       'level': level,
       'streak': streak,
+      'approvedTasksCount': approvedTasksCount,
       if (lastActivityDate != null)
         'lastActivityDate': Timestamp.fromDate(lastActivityDate!),
       'badges': badges,
@@ -55,6 +59,7 @@ class ProgressModel {
     int? xp,
     int? level,
     int? streak,
+    int? approvedTasksCount,
     DateTime? lastActivityDate,
     List<String>? badges,
   }) {
@@ -64,6 +69,7 @@ class ProgressModel {
       xp: xp ?? this.xp,
       level: level ?? this.level,
       streak: streak ?? this.streak,
+      approvedTasksCount: approvedTasksCount ?? this.approvedTasksCount,
       lastActivityDate: lastActivityDate ?? this.lastActivityDate,
       badges: badges ?? this.badges,
       updatedAt: DateTime.now(),

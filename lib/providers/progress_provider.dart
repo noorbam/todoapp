@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/progress_model.dart';
 import '../services/firestore_service.dart';
@@ -20,15 +21,18 @@ class ProgressProvider extends ChangeNotifier {
   int get xp => _progress?.xp ?? 0;
   int get level => _progress?.level ?? 1;
   int get streak => _progress?.streak ?? 0;
+  int get approvedTasksCount => _progress?.approvedTasksCount ?? 0;
   List<String> get badges => _progress?.badges ?? [];
 
   // ── Stream ────────────────────────────────────────────────────────────────
+  StreamSubscription<ProgressModel?>? _progressSubscription;
 
   void listenToProgress(String childId) {
+    _progressSubscription?.cancel();
     _isLoading = true;
     notifyListeners();
 
-    _firestoreService.getProgressStream(childId).listen(
+    _progressSubscription = _firestoreService.getProgressStream(childId).listen(
       (progress) {
         _progress = progress;
         _isLoading = false;
@@ -40,6 +44,12 @@ class ProgressProvider extends ChangeNotifier {
         notifyListeners();
       },
     );
+  }
+
+  @override
+  void dispose() {
+    _progressSubscription?.cancel();
+    super.dispose();
   }
 
   // ── Fetch Once (for parent overview) ──────────────────────────────────────
